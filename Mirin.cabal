@@ -21,3 +21,5 @@ executable Mirin
                      , Spock >= 0.11
                      , mtl
                      , text
+                     , aeson
+                     , yaml
