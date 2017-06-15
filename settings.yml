@@ -1,1 +1,8 @@
 port: "_env:PORT:3000"
+database:
+  user: "_env:MIRIN_DATABASE_USER:root"
+  password: "_env:MIRIN_DATABASE_PASSWORD:"
+  host: "_env:MIRIN_DATABASE_HOST:localhost"
+  port: "_env:MIRIN_DATABASE_PORT:3306"
+  database: "_env:MIRIN_DATABASE_NAME:mirin"
+  poolsize: "_env:MIRIN_DATABASE_POOLSIZE:5"
