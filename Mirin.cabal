@@ -25,3 +25,4 @@ executable Mirin
                      , yaml
                      , persistent
                      , persistent-mysql
+                     , monad-logger
