@@ -1,4 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Main where
 
 import Web.Spock
@@ -6,8 +12,17 @@ import Web.Spock.Config
 import Control.Monad.IO.Class (liftIO)
 import Data.Yaml.Config (loadYamlSettings, useEnv)
 import Data.Aeson (parseJSON, FromJSON, withObject, (.:))
-import Database.Persist.MySQL (MySQLConf, createMySQLPool, SqlBackend, myConnInfo, myPoolSize)
+import Database.Persist.TH (persistLowerCase, share, mkPersist, sqlSettings, mkMigrate)
+import Database.Persist.MySQL ( MySQLConf
+                              , createMySQLPool
+                              , SqlBackend
+                              , myConnInfo
+                              , myPoolSize
+                              , runSqlPool
+                              , printMigration
+                              )
 import Control.Monad.Logger (runStdoutLoggingT)
+import Data.Text (Text)
 
 data AppSettings = AppSettings { appPort :: Int
                                , appDatabaseConf :: MySQLConf
@@ -18,6 +33,14 @@ instance FromJSON AppSettings where
     <$> json .: "port"
     <*> json .: "database"
 
+share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
+Redirect sql=redirects
+  domain Text
+  originalPath Text
+  destinationPath Text
+  DomainRedirect domain originalPath
+|]
+
 main :: IO ()
 main = do
   settings <- liftIO $ loadYamlSettings ["settings.yml"] [] useEnv
@@ -25,6 +48,7 @@ main = do
     (myConnInfo $ appDatabaseConf settings)
     (myPoolSize $ appDatabaseConf settings)
   spockCfg <- defaultSpockCfg () (PCPool pool) settings
+  runStdoutLoggingT $ runSqlPool (printMigration migrateAll) pool
   runSpock (appPort settings) (spock spockCfg app)
 
 app :: SpockM SqlBackend () AppSettings ()
