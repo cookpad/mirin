@@ -5,50 +5,77 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RecordWildCards #-}
 module Main where
 
-import Web.Spock
-import Web.Spock.Config
-import Data.Yaml.Config (loadYamlSettings, useEnv)
-import Data.Aeson (parseJSON, FromJSON, withObject, (.:))
-import Database.Persist.TH (persistLowerCase, share, mkPersist, sqlSettings, mkMigrate)
-import Database.Persist.MySQL ( MySQLConf
-                              , createMySQLPool
-                              , SqlBackend
-                              , myConnInfo
-                              , myPoolSize
-                              , runSqlPool
-                              , printMigration
-                              )
-import Control.Monad.Logger (runStdoutLoggingT)
+------------
+-- Imports
+------------
+
+-- Aeson
+import Data.Aeson ((.:), FromJSON)
+import qualified Data.Aeson as A
+
+-- Logging
+import qualified Control.Monad.Logger as L
+
+-- Mysql
+import Database.Persist.MySQL (MySQLConf)
+import qualified Database.Persist.MySQL as MS
+
+-- Persistent
+import qualified Database.Persist.TH as P
+ 
+-- Spock
+import Web.Spock (SpockM, spock, runSpock, get, root, text)
+import Web.Spock.Config (defaultSpockCfg, PoolOrConn(..))
+
+-- Text
 import Data.Text (Text)
 
+-- Yaml
+import qualified Data.Yaml.Config as Y
+
+
+------------
+-- Settings
+------------
 data AppSettings = AppSettings { appPort :: Int
                                , appDatabaseConf :: MySQLConf
                                }
 
 instance FromJSON AppSettings where
-  parseJSON = withObject "AppSettings" $ \json -> AppSettings
+  parseJSON = A.withObject "AppSettings" $ \json -> AppSettings
     <$> json .: "port"
     <*> json .: "database"
 
-share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
-Redirect sql=redirects
-  domain Text
-  originalPath Text
-  destinationPath Text
-  DomainRedirect domain originalPath
-|]
 
+------------
+-- Database
+------------
+P.share
+  [P.mkPersist P.sqlSettings, P.mkMigrate "migrateAll"]
+  [P.persistLowerCase|
+    Redirect sql=redirects
+      domain Text
+      originalPath Text
+      destinationPath Text
+      DomainRedirect domain originalPath
+  |]
+
+
+------------
+-- Spock
+------------
 main :: IO ()
 main = do
-  settings <- loadYamlSettings ["settings.yml"] [] useEnv
-  pool <- runStdoutLoggingT $ createMySQLPool
-    (myConnInfo $ appDatabaseConf settings)
-    (myPoolSize $ appDatabaseConf settings)
+  settings@AppSettings{..} <- Y.loadYamlSettings ["settings.yml"] [] Y.useEnv
+  pool <- L.runStdoutLoggingT $ MS.createMySQLPool
+    (MS.myConnInfo appDatabaseConf)
+    (MS.myPoolSize appDatabaseConf)
   spockCfg <- defaultSpockCfg () (PCPool pool) settings
-  runStdoutLoggingT $ runSqlPool (printMigration migrateAll) pool
-  runSpock (appPort settings) (spock spockCfg app)
+  L.runStdoutLoggingT $ MS.runSqlPool (MS.printMigration migrateAll) pool
+  runSpock appPort (spock spockCfg app)
 
-app :: SpockM SqlBackend () AppSettings ()
+app :: SpockM MS.SqlBackend () AppSettings ()
 app = get root $ text "Hello World!"
