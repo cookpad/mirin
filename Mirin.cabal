@@ -27,3 +27,6 @@ executable Mirin
                      , persistent-mysql
                      , persistent-template
                      , monad-logger
+                     , transformers
+                     , http-types
+                     , wai
