@@ -9,7 +9,6 @@ module Main where
 
 import Web.Spock
 import Web.Spock.Config
-import Control.Monad.IO.Class (liftIO)
 import Data.Yaml.Config (loadYamlSettings, useEnv)
 import Data.Aeson (parseJSON, FromJSON, withObject, (.:))
 import Database.Persist.TH (persistLowerCase, share, mkPersist, sqlSettings, mkMigrate)
@@ -43,7 +42,7 @@ Redirect sql=redirects
 
 main :: IO ()
 main = do
-  settings <- liftIO $ loadYamlSettings ["settings.yml"] [] useEnv
+  settings <- loadYamlSettings ["settings.yml"] [] useEnv
   pool <- runStdoutLoggingT $ createMySQLPool
     (myConnInfo $ appDatabaseConf settings)
     (myPoolSize $ appDatabaseConf settings)
