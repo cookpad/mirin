@@ -62,6 +62,7 @@ import Data.Text.Encoding (decodeUtf8)
 -- Transformers
 import Control.Monad.Trans.Maybe (MaybeT(..), runMaybeT)
 import Control.Monad.Trans.Reader (ReaderT)
+import Control.Monad.Trans.Resource (runResourceT, ResourceT)
 
 -- Yaml
 import qualified Data.Yaml.Config as Y
@@ -85,10 +86,10 @@ instance FromJSON AppSettings where
 ------------
 -- Database
 ------------
-type DB = ReaderT MS.SqlBackend (LoggingT IO)
+type DB = ReaderT MS.SqlBackend (LoggingT (ResourceT IO))
 
-runSQL :: (HasSpock m, SpockConn m ~ MS.SqlBackend) => MS.SqlPersistT (LoggingT IO) a -> m a
-runSQL action = runQuery $ \conn -> L.runStdoutLoggingT $ MS.runSqlConn action conn
+runSQL :: (HasSpock m, SpockConn m ~ MS.SqlBackend) => MS.SqlPersistT (LoggingT (ResourceT IO)) a -> m a
+runSQL action = runQuery $ \conn -> runResourceT $ L.runStdoutLoggingT $ MS.runSqlConn action conn
 
 P.share
   [P.mkPersist P.sqlSettings, P.mkMigrate "migrateAll"]

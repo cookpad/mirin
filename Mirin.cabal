@@ -30,3 +30,4 @@ executable Mirin
                      , transformers
                      , http-types
                      , wai
+                     , resourcet
