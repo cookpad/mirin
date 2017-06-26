@@ -1,5 +1,5 @@
 port: "_env:PORT:3000"
-base-url: "_env:MIRIN_BASE_URL:cookpad.com"
+base-url: "_env:MIRIN_BASE_URL:https://cookpad.com"
 database:
   user: "_env:MIRIN_DATABASE_USER:root"
   password: "_env:MIRIN_DATABASE_PASSWORD:"
