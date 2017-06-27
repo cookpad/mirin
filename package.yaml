@@ -1,0 +1,37 @@
+name: Mirin
+version: '0.1.0.0'
+category: Web
+author: Matthew Mongeau
+maintainer: halogenandtoast@gmail.com
+copyright: 2017 Cookpad inc.
+license: BSD3
+homepage: https://github.com/cookpad/mirin#readme
+extra-source-files:
+- README.md
+dependencies:
+- persistent-mysql
+- transformers
+library:
+  source-dirs: src
+  dependencies:
+  - base >=4.7 && <5
+  - Spock >=0.11
+  - mtl
+  - text
+  - aeson
+  - yaml
+  - persistent
+  - persistent-template
+  - monad-logger
+  - http-types
+  - wai
+  - resourcet
+  - resource-pool
+executables:
+  Mirin:
+    main: Main.hs
+    source-dirs: app
+    dependencies:
+    - base
+    - Mirin
+    - Spock
